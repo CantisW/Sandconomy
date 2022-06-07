@@ -1,4 +1,12 @@
-import { ButtonInteraction, ColorResolvable, CommandInteraction, Interaction, MessageActionRow, MessageButton, MessageEmbed } from "discord.js";
+import {
+    ButtonInteraction,
+    ColorResolvable,
+    CommandInteraction,
+    Interaction,
+    MessageActionRow,
+    MessageButton,
+    MessageEmbed,
+} from "discord.js";
 import { ButtonComponent, Discord, Slash } from "discordx";
 import { IAccount } from "../types/types.js";
 import { ReturnOrderedUsers } from "../util/accountUtil.js";
@@ -26,10 +34,8 @@ export class Leaderboard {
     users: IAccount[];
     length: number;
 
-    @Slash("leaderboard", { "description": "View the global leaderboards!" })
-    async leaderboard(
-        interaction: CommandInteraction
-    ) {
+    @Slash("leaderboard", { description: "View the global leaderboards!" })
+    async leaderboard(interaction: CommandInteraction) {
         let to = 9;
         let row = new MessageActionRow();
         let components = false;
@@ -50,19 +56,19 @@ export class Leaderboard {
             //.setImage('')
             .setTimestamp()
             .setFooter(`${currencyName}`, ""); // TODO: set url as second arg
-            
+
         if (this.length > to) {
-            components = true
+            components = true;
             row = row.addComponents([forwardButton]);
         } else {
             to = this.length;
         }
 
-        for (let i = 0; i <= to ; i++) {
+        for (let i = 0; i <= to; i++) {
             embed.addFields({
-                "name": `${await fetchUsername(this.users[i].userid)}`,
-                "value": `${formatBalance(this.users[i].balance)} (${formatBalance(this.users[i].cash)} in cash)`
-            })
+                name: `${await fetchUsername(this.users[i].userid)}`,
+                value: `${formatBalance(this.users[i].balance)} (${formatBalance(this.users[i].cash)} in cash)`,
+            });
         }
 
         if (components) {
@@ -72,22 +78,18 @@ export class Leaderboard {
         }
     }
 
-
-
     @ButtonComponent("forward")
-    async forward (
-        interaction: ButtonInteraction
-    ) {
+    async forward(interaction: ButtonInteraction) {
         let to = getPagnationUserIndex(interaction.user.id, "leaderboard");
         let row = new MessageActionRow();
 
         if (to === 0) setPagnationUserIndex(interaction.user.id, "leaderboard", 10); // assumes that user made a new list if 'to' is 0
 
-        let current = Math.floor((1 + getPagnationUserIndex(interaction.user.id, "leaderboard"))/10) * 10; // Sets current to where we are right now
+        let current = Math.floor((1 + getPagnationUserIndex(interaction.user.id, "leaderboard")) / 10) * 10; // Sets current to where we are right now
 
         if (this.length > current + 9) {
-            setPagnationUserIndex(interaction.user.id, "leaderboard", current + 9); // Where we are going to (if we had 30 items, it would go 0 => 9, then 10 => 19, then...)  
-            row = row.addComponents([backButton, forwardButton]);      
+            setPagnationUserIndex(interaction.user.id, "leaderboard", current + 9); // Where we are going to (if we had 30 items, it would go 0 => 9, then 10 => 19, then...)
+            row = row.addComponents([backButton, forwardButton]);
         } else {
             setPagnationUserIndex(interaction.user.id, "leaderboard", this.length);
             row = row.addComponents([backButton]);
@@ -100,37 +102,35 @@ export class Leaderboard {
             .setTitle("Global Leaderboard")
             //.setURL('')s
             //.setAuthor('Santeeisweird9')
-            .setDescription(`The global leaderboard of Elon Musks (pg ${(current-9)+1})`)
+            .setDescription(`The global leaderboard of Elon Musks (pg ${current - 9 + 1})`)
             //.setThumbnail('')
             //.addField('', '', true)
             //.setImage('')
             .setTimestamp()
             .setFooter(`${currencyName}`, ""); // TODO: set url as second arg
 
-        for (let i = current; i <= to ; i++) {
+        for (let i = current; i <= to; i++) {
             embed.addFields({
-                "name": `${await fetchUsername(this.users[i].userid)}`,
-                "value": `${formatBalance(this.users[i].balance)} (${formatBalance(this.users[i].cash)} in cash)`
-            })
+                name: `${await fetchUsername(this.users[i].userid)}`,
+                value: `${formatBalance(this.users[i].balance)} (${formatBalance(this.users[i].cash)} in cash)`,
+            });
         }
         await interaction.deferUpdate();
         await interaction.editReply({ embeds: [embed], components: [row] });
     }
 
     @ButtonComponent("back")
-    async back (
-        interaction: ButtonInteraction
-    ) {
+    async back(interaction: ButtonInteraction) {
         let to = getPagnationUserIndex(interaction.user.id, "leaderboard");
         let row = new MessageActionRow();
 
         if (to === 0) return interaction.reply("Don't have more than two leaderboards!"); // this shouldn't normally be possible
 
-        let current = Math.floor((1 + getPagnationUserIndex(interaction.user.id, "leaderboard"))/10) * 10; // Sets current to where we are right now
+        let current = Math.floor((1 + getPagnationUserIndex(interaction.user.id, "leaderboard")) / 10) * 10; // Sets current to where we are right now
 
-        if ( current - 10 > 0) {
-            setPagnationUserIndex(interaction.user.id, "leaderboard", current - 10); // Where we are going to 
-            row = row.addComponents([backButton, forwardButton]);      
+        if (current - 10 > 0) {
+            setPagnationUserIndex(interaction.user.id, "leaderboard", current - 10); // Where we are going to
+            row = row.addComponents([backButton, forwardButton]);
         } else {
             setPagnationUserIndex(interaction.user.id, "leaderboard", 9);
             row = row.addComponents([forwardButton]);
@@ -143,7 +143,7 @@ export class Leaderboard {
             .setTitle("Global Leaderboard")
             //.setURL('')s
             //.setAuthor('Santeeisweird9')
-            .setDescription(`The global leaderboard of Elon Musks (pg ${current-9})`)
+            .setDescription(`The global leaderboard of Elon Musks (pg ${current - 9})`)
             //.setThumbnail('')
             //.addField('', '', true)
             //.setImage('')
@@ -157,11 +157,11 @@ export class Leaderboard {
             current = current - 1;
         }
 
-        for (let i = to; i <= current ; i++) {
+        for (let i = to; i <= current; i++) {
             embed.addFields({
-                "name": `${await fetchUsername(this.users[i].userid)}`,
-                "value": `${formatBalance(this.users[i].balance)} (${formatBalance(this.users[i].cash)} in cash)`
-            })
+                name: `${await fetchUsername(this.users[i].userid)}`,
+                value: `${formatBalance(this.users[i].balance)} (${formatBalance(this.users[i].cash)} in cash)`,
+            });
         }
         await interaction.deferUpdate();
         await interaction.editReply({ embeds: [embed], components: [row] });

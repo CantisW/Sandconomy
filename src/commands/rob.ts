@@ -13,33 +13,35 @@ if (returnBotSetting("environment") !== "production") {
 @Discord()
 @SlashGroup({ name: "crime", description: "Do some dirty crime." })
 export class Rob {
-    @Slash("rob", { "description": "Rob money from another user." })
+    @Slash("rob", { description: "Rob money from another user." })
     @SlashGroup("crime")
-    async rob (
-        @SlashOption("user", {"description": "Who? [ @User ]", "type": "USER" })
+    async rob(
+        @SlashOption("user", { description: "Who? [ @User ]", type: "USER" })
         user: User,
-        interaction: CommandInteraction
+        interaction: CommandInteraction,
     ) {
-        rob(interaction.user.id, user.id).then(e => {
-            return interaction.reply({ embeds: [e] });
-        }).catch(e => {
-            return interaction.reply({ embeds: [e] });
-        })
+        rob(interaction.user.id, user.id)
+            .then((e) => {
+                return interaction.reply({ embeds: [e] });
+            })
+            .catch((e) => {
+                return interaction.reply({ embeds: [e] });
+            });
     }
 
-    @Slash("message", { "description": "Add a rob message." })
+    @Slash("message", { description: "Add a rob message." })
     @SlashGroup("crime")
     @Permission(false)
     @Permission({ id: ownerid, type: "USER", permission: true })
-    async message (
-        @SlashOption("message", { "description": "The message.", "type": "STRING" })
-        @SlashOption("type", { "description": "If the rob is a positive or negative message.", "type": "BOOLEAN" })
+    async message(
+        @SlashOption("message", { description: "The message.", type: "STRING" })
+        @SlashOption("type", { description: "If the rob is a positive or negative message.", type: "BOOLEAN" })
         message: string,
         type: boolean,
-        interaction: CommandInteraction
+        interaction: CommandInteraction,
     ) {
-        if(await createRobMessage(message, type)) {
-            return interaction.reply("Successfully created rob message.")
+        if (await createRobMessage(message, type)) {
+            return interaction.reply("Successfully created rob message.");
         } else {
             return interaction.reply("Something has gone wrong.");
         }

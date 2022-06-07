@@ -17,7 +17,7 @@ export interface IAccount {
 export interface IPagnationArray {
     user: string;
     command: string;
-    index: number
+    index: number;
 }
 
 export interface IJob {

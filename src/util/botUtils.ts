@@ -11,8 +11,8 @@ const pagnationArray: IPagnationArray[] = [];
 export const returnBotSetting = (setting: string): string => {
     const settings = fs.readFileSync("./src/data/bot-settings.json", "utf-8");
     const parsedSettings = JSON.parse(settings);
-    return settings ? parsedSettings[setting] : "Oops! You picked the wrong setting!"
-}
+    return settings ? parsedSettings[setting] : "Oops! You picked the wrong setting!";
+};
 
 export const getConfig = () => {
     const config = fs.readFileSync("./src/data/settings.json", "utf-8");
@@ -37,13 +37,13 @@ export const fetchUsername = async (id: string) => {
     } catch {
         return id;
     }
-}
+};
 
 /**
  * Sets a specific user's current index for pagnationed things (such as leaderboards).
  */
 export const setPagnationUserIndex = (user: string, command: string, index: number) => {
-    const obj = { user: user, command: command, index: index }
+    const obj = { user: user, command: command, index: index };
     if (index === 0) {
         pagnationArray.filter((v) => v !== obj); // remove if index is set to 0
     }
@@ -51,16 +51,16 @@ export const setPagnationUserIndex = (user: string, command: string, index: numb
         if (v.user === user && v.command === command) {
             v.index = index;
         }
-    })
-    console.log(pagnationArray)
+    });
+    console.log(pagnationArray);
     return true;
-}
+};
 
 /**
  * Returns a specific user's current index for pagnationed things (such as leaderboards). Can also create one.
  */
 export const getPagnationUserIndex = (user: string, command: string) => {
-    const obj = { user: user, command: command, index: 0 }
+    const obj = { user: user, command: command, index: 0 };
     let found = false;
     let index = 0;
     pagnationArray.forEach((v) => {
@@ -68,25 +68,25 @@ export const getPagnationUserIndex = (user: string, command: string) => {
             found = true;
             index = v.index;
         }
-    })
+    });
     if (found) return index;
     pagnationArray.push(obj);
     return 0;
-}
+};
 
 export const createEmbed = (name: string, value: string, color: string, title = "", desc = "") => {
     const { currencyName }: IConfig = getConfig();
     const embed = new MessageEmbed()
-            .setColor(color as ColorResolvable)
-            .setTitle(title)
-            //.setURL('')s
-            //.setAuthor('Santeeisweird9')
-            .setDescription(desc)
-            .addFields({ "name": name, "value": value })
-            //.setThumbnail('')
-            //.addField('', '', true)
-            //.setImage('')
-            .setTimestamp()
-            .setFooter(`${currencyName}`, ""); // TODO: set url as second arg
-        return embed;
-}
+        .setColor(color as ColorResolvable)
+        .setTitle(title)
+        //.setURL('')s
+        //.setAuthor('Santeeisweird9')
+        .setDescription(desc)
+        .addFields({ name: name, value: value })
+        //.setThumbnail('')
+        //.addField('', '', true)
+        //.setImage('')
+        .setTimestamp()
+        .setFooter(`${currencyName}`, ""); // TODO: set url as second arg
+    return embed;
+};

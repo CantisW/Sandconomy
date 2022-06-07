@@ -5,14 +5,14 @@ import { work } from "../util/economyUtil.js";
 
 @Discord()
 export class Work {
-    @Slash("work", { "description": "Work at your job!" })
-    async work (
-        interaction: CommandInteraction
-    ) {
-        work(interaction.user.id).then(e => {
-                return interaction.reply({ embeds: [e]});
-            }).catch(e => {
+    @Slash("work", { description: "Work at your job!" })
+    async work(interaction: CommandInteraction) {
+        work(interaction.user.id)
+            .then((e) => {
                 return interaction.reply({ embeds: [e] });
             })
+            .catch((e) => {
+                return interaction.reply({ embeds: [e] });
+            });
     }
 }

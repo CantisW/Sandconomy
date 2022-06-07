@@ -1,4 +1,13 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import {
+    BaseEntity,
+    Column,
+    CreateDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    OneToOne,
+    PrimaryGeneratedColumn,
+} from "typeorm";
 import { Job } from "./Job.js";
 
 @Entity()
@@ -34,10 +43,10 @@ export class User extends BaseEntity {
     @Column({ default: 0 })
     level: number;
 
-    @Column({ type: 'bigint', default: 0 })
+    @Column({ type: "bigint", default: 0 })
     last_worked: number;
 
-    @Column({ type: 'bigint', default: 0 })
+    @Column({ type: "bigint", default: 0 })
     last_robbed: number;
 
     @CreateDateColumn()
