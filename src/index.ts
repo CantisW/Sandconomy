@@ -4,10 +4,17 @@ import "dotenv/config";
 import { Client } from "discordx";
 import { Intents, Interaction, Message } from "discord.js";
 import { dirname, importx } from "@discordx/importer";
-import { returnBotSetting } from "./util/bot.js";
+import { returnBotSetting } from "./util/botUtils.js";
+import { AppDataSource } from "./data-source.js";
 
 import config from "./data/bot-settings.json" assert { type: "json" };
 let { guildId, token } = config;
+
+AppDataSource.initialize()
+    .then(() => {
+        console.log("Connected to DB!")
+    })
+    .catch((error) => console.log(error))
 
 if (returnBotSetting("environment") !== "production") {
     token = process.env.TOKEN || "";
@@ -28,10 +35,10 @@ client.once("ready", async () => {
     await client.guilds.fetch();
     await client.initApplicationCommands({
         guild: { log: true },
-        global: { log: true },
+        // global: { log: true },
     });
     await client.initApplicationPermissions(true);
-    client.user!.setPresence({ activities: [{ name: `An economy bot` }], status: "online" });
+    client.user!.setPresence({ activities: [{ name: `Counter Strike: Global Offensive` }], status: "online" });
     console.log("Ready!");
 });
 
