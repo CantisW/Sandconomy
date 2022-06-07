@@ -1,4 +1,4 @@
-import "reflect-metadata"
+import "reflect-metadata";
 import "dotenv/config";
 
 import { Client } from "discordx";
@@ -12,9 +12,9 @@ let { guildId, token } = config;
 
 AppDataSource.initialize()
     .then(() => {
-        console.log("Connected to DB!")
+        console.log("Connected to DB!");
     })
-    .catch((error) => console.log(error))
+    .catch((error) => console.log(error));
 
 if (returnBotSetting("environment") !== "production") {
     token = process.env.TOKEN || "";
