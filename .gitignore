@@ -1,7 +1,7 @@
 node_modules/
 build/
 
-ormconfig.json
+data-source.ts
 *-backup.json
 *.env
 *.bat
