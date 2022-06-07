@@ -1,0 +1,7 @@
+{
+    "currencyName": "US Dollars",
+    "fine": 3,
+    "maxRobPercentage": 35,
+    "workCooldown": 1,
+    "robCooldown": 3
+}
