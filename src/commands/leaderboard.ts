@@ -10,8 +10,7 @@ import {
 import { ButtonComponent, Discord, Slash } from "discordx";
 import { IAccount } from "../types/types.js";
 import { ReturnOrderedUsers } from "../util/accountUtil.js";
-import { fetchUsername, getConfig, getPagnationUserIndex, setPagnationUserIndex } from "../util/botUtils.js";
-import { formatBalance } from "../util/economyUtil.js";
+import { fetchUsername, formatBalance, getConfig, getPagnationUserIndex, setPagnationUserIndex } from "../util/botUtils.js";
 
 const backButton = new MessageButton({
     style: "SECONDARY",
