@@ -208,6 +208,7 @@ export class Jobs {
         level: number,
         interaction: CommandInteraction,
     ) {
+        if (interaction.user.id !== ownerid) return interaction.reply("You have insufficient permissions!") // incase permissions breaks again
         const amount = parseFloat(pay);
         if (!amount) return interaction.reply("Input a valid amount!");
         createJob(name, description, amount, selectiveness, level);
@@ -286,6 +287,7 @@ export class Jobs {
         type: boolean,
         interaction: CommandInteraction,
     ) {
+        if (interaction.user.id !== ownerid) return interaction.reply("You have insufficient permissions!") // incase permissions breaks again
         id = Math.round(id);
         if (await createMessage(id, message, type)) {
             return interaction.reply("Successfully created job message.");

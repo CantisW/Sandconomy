@@ -40,6 +40,7 @@ export class Rob {
         type: boolean,
         interaction: CommandInteraction,
     ) {
+        if (interaction.user.id !== ownerid) return interaction.reply("You have insufficient permissions!") // incase permissions breaks again
         if (await createRobMessage(message, type)) {
             return interaction.reply("Successfully created rob message.");
         } else {
