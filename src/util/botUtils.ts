@@ -90,3 +90,19 @@ export const createEmbed = (name: string, value: string, color: string, title = 
         .setFooter(`${currencyName}`, ""); // TODO: set url as second arg
     return embed;
 };
+
+/**
+ * Format a balance. (10000 => 10,000)
+ */
+export const formatBalance = (balance: number) => {
+    balance = parseBalance(balance);
+    return `$${String(balance).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+};
+
+/**
+ * Parse a balance. (19.2712 => 19.27) (-9 => 0)
+ */
+export const parseBalance = (num: number) => {
+    if (num < 0) return 0;
+    return Math.round(num * 10 ** 2) / 10 ** 2; // mult by places then round to cut off excess, then go back to decimal
+};

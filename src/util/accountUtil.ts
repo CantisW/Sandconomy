@@ -1,7 +1,6 @@
 import { User } from "../entity/User.js";
 import { IAccount } from "../types/types.js";
-import { sanitizeId } from "./botUtils.js";
-import { parseBalance } from "./economyUtil.js";
+import { parseBalance, sanitizeId } from "./botUtils.js";
 
 /**
  * Check if an account exists in the database. If not, create one.
@@ -46,14 +45,15 @@ export const GetAccountInfo = async (id: string) => {
  */
 
 export const ReturnOrderedUsers = async (): Promise<IAccount[]> => {
-    const user = await User.createQueryBuilder("user")
+    let user = await User.createQueryBuilder("user").select("*").getRawMany();
+    for (let i = 0; i <= user.length - 1; i++) {
+        await GetAccountInfo(user[i].userid);
+    }
+    user = await User.createQueryBuilder("user")
         .select("*")
         .where("user.balance > 0")
         .orderBy("user.balance", "DESC")
         .getRawMany();
-    for (let i = 0; i <= user.length - 1; i++) {
-        await GetAccountInfo(user[i].userid);
-    }
 
     return user;
 };

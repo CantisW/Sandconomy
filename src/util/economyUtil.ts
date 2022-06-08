@@ -4,23 +4,7 @@ import { Message } from "../entity/Message.js";
 import { Rob } from "../entity/Rob.js";
 import { User } from "../entity/User.js";
 import { IConfig, IJob } from "../types/types.js";
-import { createEmbed, getConfig } from "./botUtils.js";
-
-/**
- * Format a balance. (10000 => 10,000)
- */
-export const formatBalance = (balance: number) => {
-    balance = parseBalance(balance);
-    return `$${String(balance).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
-};
-
-/**
- * Parse a balance. (19.2712 => 19.27) (-9 => 0)
- */
-export const parseBalance = (num: number) => {
-    if (num < 0) return 0;
-    return Math.round(num * 10 ** 2) / 10 ** 2; // mult by places then round to cut off excess, then go back to decimal
-};
+import { createEmbed, formatBalance, getConfig, parseBalance } from "./botUtils.js";
 
 export const returnOrderedJobs = async (): Promise<IJob[]> => {
     const job = await Job.createQueryBuilder("job").select("*").orderBy("job.amount", "ASC").getRawMany();
@@ -40,10 +24,16 @@ export const createJob = async (name: string, description: string, amount: numbe
 
 export const getJob = async (id: string, jobid: number) => {
     return new Promise(async (resolve, reject) => {
+        const { workCooldown }: IConfig = getConfig();
+        const cooldown = workCooldown * 1000 * 60 * 3;
         const job = await Job.findOne({ where: { id: jobid } });
         const user = await User.findOne({ where: { userid: id } });
+        
         if (!job) return reject("This job doesn't exist!");
         if (!user) return reject("You don't have a bank account! Open one with /balance.");
+
+        if (Number(user.last_applied) + cooldown > Date.now())
+            return reject(`You need to wait ${workCooldown*3} minutes before applying to another job!`);
         if (user.employed)
             return reject("You wouldn't cheat on your employer, would you? (Pro tip: quit your job first!)");
         if (job.minimum_level > user.level)
@@ -53,9 +43,12 @@ export const getJob = async (id: string, jobid: number) => {
             if (rnd <= job.selectiveness) {
                 user.last_job = job;
                 user.employed = true;
+                user.last_applied = Date.now();
                 user.save();
                 resolve(true);
             } else {
+                user.last_applied = Date.now();
+                user.save();
                 return reject("You didn't get hired this time around. Oh well...you should reflect on your mistakes.");
             }
         }
@@ -69,6 +62,7 @@ export const getJob = async (id: string, jobid: number) => {
 export const quitJob = async (id: string) => {
     const user = await User.findOne({ where: { userid: id } });
     if (!user) return false;
+    if (!user.employed) return false;
     user.employed = false;
     user.save();
     return true;
@@ -110,6 +104,10 @@ export const work = async (id: string): Promise<MessageEmbed> => {
 
         const job = user.last_job;
         if (!job) return reject("You don't have a job!");
+
+        const employed = user.employed;
+        if (!employed) return reject("You don't have a job!");
+
         const messages = await Message.createQueryBuilder("message")
             .leftJoinAndSelect("message.job", "job")
             .where("job.id = :jobId", { jobId: job.id })
@@ -117,7 +115,7 @@ export const work = async (id: string): Promise<MessageEmbed> => {
         if (messages.length === 0) return reject("Your employer doesn't seem to need you right now.");
 
         let rnd = Math.round(Math.random() * messages.length - 1);
-        let hours = Math.round(Math.random() * 8);
+        let hours = Math.round(Math.random() * 9);
 
         if (hours <= 0) hours = 2;
         if (rnd < 0) rnd = 0;
@@ -132,7 +130,7 @@ export const work = async (id: string): Promise<MessageEmbed> => {
             user.last_worked = Date.now();
             user.save();
             const embed = createEmbed(selected.text, `Amount lost: ${formatBalance(lost)}`, "RED");
-            return reject(embed);
+            return resolve(embed);
         }
 
         user.cash = parseBalance(user.cash + amount);
@@ -204,7 +202,7 @@ export const rob = async (id: string, robbed: string): Promise<MessageEmbed> => 
                 `User attempted to robbed: <@${robbed}>\nAmount lost: ${formatBalance(lost)}`,
                 "RED",
             );
-            return reject(embed);
+            return resolve(embed);
         }
         user.cash = parseBalance(user.cash + robbedAmount);
         user.last_robbed = Date.now();
@@ -229,7 +227,48 @@ export const createRobMessage = async (text: string, type = true) => {
 };
 
 export const xpUntilNextLevel = async (id: string) => {
+    const { experienceNeededMultiplier } = getConfig();
     const user = await User.findOne({ where: { userid: id } });
     if (!user) return 0;
-    return Math.floor(6 * (user.level + 1) ** (2 / 4));
+    return Math.floor(experienceNeededMultiplier * (user.level + 1) ** (1 / 2));
 };
+
+export const flipCoin = async (id: string, amt: string, choice: string): Promise<MessageEmbed> => {
+    return new Promise(async (resolve, reject) => {
+        const user = await User.findOne({ where: { userid: id } });
+        if (!user) return reject("You do not have a bank account to gamble with! Open one with /balance.");
+        let amount = parseFloat(amt);
+        if (!amount) return reject("You can't gamble that!");
+        if (user.cash < parseBalance(amount)) return reject("You don't have this much to gamble!")
+
+        const gamble = Math.round(Math.random())
+
+        if (choice === "heads") {
+            if (gamble === 0) {
+                amount = parseBalance(amount);
+                user.cash = user.cash + amount;
+                user.save();
+                resolve(createEmbed("You flipped heads!", `You won ${formatBalance(amount)}!`, "GREEN"));
+            } else {
+                user.cash = user.cash - amount;
+                user.save();
+                resolve(createEmbed("You flipped tails!", `You lost ${formatBalance(amount)}!`, "RED"));
+            }
+        } else {
+            if (gamble === 1) {
+                amount = parseBalance(amount);
+                user.cash = user.cash + amount;
+                user.save();
+                resolve(createEmbed("You flipped tails!", `You won ${formatBalance(amount)}!`, "GREEN"));
+            } else {
+                user.cash = user.cash - amount;
+                user.save();
+                resolve(createEmbed("You flipped heads!", `You lost ${formatBalance(amount)}!`, "RED"));
+            }
+        }
+    })
+}
+
+export const transfer = (recepient: string, amount: number) => {
+
+}
