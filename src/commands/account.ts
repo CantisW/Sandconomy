@@ -1,8 +1,8 @@
 import { ColorResolvable, CommandInteraction, MessageEmbed, User } from "discord.js";
 import { Discord, Permission, Slash, SlashOption } from "discordx";
 import { CheckIfAccountExists, DepositCash, GetAccountInfo, WithdrawCash } from "../util/accountUtil.js";
-import { fetchUsername, getConfig } from "../util/botUtils.js";
-import { formatBalance, xpUntilNextLevel } from "../util/economyUtil.js";
+import { fetchUsername, formatBalance, getConfig } from "../util/botUtils.js";
+import { xpUntilNextLevel } from "../util/economyUtil.js";
 
 @Discord()
 export class Account {
