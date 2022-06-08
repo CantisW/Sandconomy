@@ -49,6 +49,9 @@ export class User extends BaseEntity {
     @Column({ type: "bigint", default: 0 })
     last_robbed: number;
 
+    @Column({ type: "bigint", default: 0 })
+    last_applied: number;
+
     @CreateDateColumn()
     created: Date;
 }
