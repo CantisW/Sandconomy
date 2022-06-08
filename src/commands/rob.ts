@@ -25,14 +25,14 @@ export class Rob {
                 return interaction.reply({ embeds: [e] });
             })
             .catch((e) => {
-                return interaction.reply({ embeds: [e] });
+                return interaction.reply(e);
             });
     }
 
-    @Slash("message", { description: "Add a rob message." })
-    @SlashGroup("crime")
     @Permission(false)
     @Permission({ id: ownerid, type: "USER", permission: true })
+    @Slash("message", { description: "Add a rob message." })
+    @SlashGroup("crime")
     async message(
         @SlashOption("message", { description: "The message.", type: "STRING" })
         @SlashOption("type", { description: "If the rob is a positive or negative message.", type: "BOOLEAN" })
