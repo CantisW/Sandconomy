@@ -11,6 +11,7 @@ export interface IAccount {
     level: number;
     last_worked: number;
     last_robbed: number;
+    last_applied: number;
     created: Date;
 }
 
@@ -35,4 +36,5 @@ export interface IConfig {
     maxRobPercentage: number;
     workCooldown: number;
     robCooldown: number;
+    experienceNeededMultiplier: number;
 }
