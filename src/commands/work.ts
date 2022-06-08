@@ -12,7 +12,7 @@ export class Work {
                 return interaction.reply({ embeds: [e] });
             })
             .catch((e) => {
-                return interaction.reply({ embeds: [e] });
+                return interaction.reply(e);
             });
     }
 }
