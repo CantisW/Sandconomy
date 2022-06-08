@@ -9,11 +9,10 @@ import {
 } from "discord.js";
 import { ButtonComponent, Discord, Permission, Slash, SlashGroup, SlashOption } from "discordx";
 import { IJob } from "../types/types.js";
-import { getConfig, getPagnationUserIndex, returnBotSetting, setPagnationUserIndex } from "../util/botUtils.js";
+import { formatBalance, getConfig, getPagnationUserIndex, returnBotSetting, setPagnationUserIndex } from "../util/botUtils.js";
 import {
     createJob,
     createMessage,
-    formatBalance,
     getEmploymentStatus,
     getJob,
     getJobInfo,
@@ -188,10 +187,10 @@ export class Jobs {
         await interaction.editReply({ embeds: [embed], components: [row] });
     }
 
-    @Slash("create", { description: "Create jobs." })
-    @SlashGroup("job")
     @Permission(false)
     @Permission({ id: ownerid, type: "USER", permission: true })
+    @Slash("create", { description: "Create jobs." })
+    @SlashGroup("job")
     async create(
         @SlashOption("name", { description: "The name of the job.", type: "STRING" })
         @SlashOption("description", { description: "What the job does.", type: "STRING" })
@@ -222,6 +221,7 @@ export class Jobs {
         id: number,
         interaction: CommandInteraction,
     ) {
+        id = Math.round(id);
         await getJob(interaction.user.id, id)
             .then(() => {
                 return interaction.reply(`You have been hired!`);
@@ -269,10 +269,10 @@ export class Jobs {
         }
     }
 
-    @Slash("message", { description: "Add a job work message." })
-    @SlashGroup("job")
     @Permission(false)
     @Permission({ id: ownerid, type: "USER", permission: true })
+    @Slash("message", { description: "Add a job work message." })
+    @SlashGroup("job")
     async message(
         @SlashOption("id", { description: "The ID of a job.", type: "NUMBER" })
         @SlashOption("message", { description: "The message.", type: "STRING" })
@@ -286,6 +286,7 @@ export class Jobs {
         type: boolean,
         interaction: CommandInteraction,
     ) {
+        id = Math.round(id);
         if (await createMessage(id, message, type)) {
             return interaction.reply("Successfully created job message.");
         } else {
