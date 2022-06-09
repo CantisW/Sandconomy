@@ -90,10 +90,11 @@ export class Account {
         interaction: CommandInteraction,
     ) {
         if (await CheckIfAccountExists(interaction.user.id)) {
+            const { cash } = await GetAccountInfo(interaction.user.id);
+            let x = amount;
+            if (!amount) x = cash.toString();
             if (await DepositCash(interaction.user.id, amount)) {
-                const { cash } = await GetAccountInfo(interaction.user.id);
-                if (!amount) amount = cash.toString();
-                return interaction.reply(`You successfully deposited ${formatBalance(parseFloat(amount))} into your bank!`);
+                return interaction.reply(`You successfully deposited ${formatBalance(parseFloat(x))} into your bank!`);
             } else {
                 return interaction.reply("You can't deposit that!");
             }
@@ -112,10 +113,11 @@ export class Account {
         interaction: CommandInteraction,
     ) {
         if (await CheckIfAccountExists(interaction.user.id)) {
+            const { bank } = await GetAccountInfo(interaction.user.id);
+            let x = amount;
+            if (!amount) x = bank.toString();
             if (await WithdrawCash(interaction.user.id, amount)) {
-                const { bank } = await GetAccountInfo(interaction.user.id);
-                if (!amount) amount = bank.toString();
-                return interaction.reply(`You successfully withdrawn ${formatBalance(parseFloat(amount))} from your bank!`);
+                return interaction.reply(`You successfully withdrawn ${formatBalance(parseFloat(x))} from your bank!`);
             } else {
                 return interaction.reply("You can't withdraw that!");
             }
