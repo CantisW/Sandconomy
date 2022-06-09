@@ -84,17 +84,16 @@ export class Account {
     async deposit(
         @SlashOption("amount", {
             description: "How much? [ number or leave blank to deposit all ]",
-            required: false,
-            type: "NUMBER",
+            required: false
         })
-        amount: number,
+        amount: string,
         interaction: CommandInteraction,
     ) {
         if (await CheckIfAccountExists(interaction.user.id)) {
-            const { cash } = await GetAccountInfo(interaction.user.id);
-            if (!amount) amount = cash;
             if (await DepositCash(interaction.user.id, amount)) {
-                return interaction.reply(`You successfully deposited ${formatBalance(amount)} into your bank!`);
+                const { cash } = await GetAccountInfo(interaction.user.id);
+                if (!amount) amount = cash.toString();
+                return interaction.reply(`You successfully deposited ${formatBalance(parseFloat(amount))} into your bank!`);
             } else {
                 return interaction.reply("You can't deposit that!");
             }
@@ -107,17 +106,16 @@ export class Account {
     async withdraw(
         @SlashOption("amount", {
             description: "How much? [ number or leave blank to deposit all ]",
-            required: false,
-            type: "NUMBER",
+            required: false
         })
-        amount: number,
+        amount: string,
         interaction: CommandInteraction,
     ) {
         if (await CheckIfAccountExists(interaction.user.id)) {
-            const { bank } = await GetAccountInfo(interaction.user.id);
-            if (!amount) amount = bank;
             if (await WithdrawCash(interaction.user.id, amount)) {
-                return interaction.reply(`You successfully withdrawn ${formatBalance(amount)} from your bank!`);
+                const { bank } = await GetAccountInfo(interaction.user.id);
+                if (!amount) amount = bank.toString();
+                return interaction.reply(`You successfully withdrawn ${formatBalance(parseFloat(amount))} from your bank!`);
             } else {
                 return interaction.reply("You can't withdraw that!");
             }
