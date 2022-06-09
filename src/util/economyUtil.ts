@@ -238,7 +238,7 @@ export const flipCoin = async (id: string, amt: string, choice: string): Promise
     return new Promise(async (resolve, reject) => {
         const user = await User.findOne({ where: { userid: id } });
         if (!user) return reject("You do not have a bank account to gamble with! Open one with /balance.");
-        let amount = parseFloat(amt);
+        let amount = parseBalance(parseFloat(amt));
         if (!amount) return reject("You can't gamble that!");
         if (user.cash < parseBalance(amount)) return reject("You don't have this much to gamble!")
 
@@ -273,7 +273,7 @@ export const scratch = (id: string, choice: string): Promise<MessageEmbed> => {
         const user = await User.findOne({ where: { userid: id } });
         if (!user) return reject("You do not have a bank account to gamble with! Open one with /balance.");
 
-        let amount = parseInt(choice.replace('$', ''))
+        let amount = parseBalance(parseInt(choice.replace('$', '')));
 
         if (user.cash < parseBalance(amount)) return reject("You don't have this much to gamble!")
 
@@ -313,6 +313,21 @@ export const scratch = (id: string, choice: string): Promise<MessageEmbed> => {
     })
 }
 
-export const transfer = (recepient: string, amount: number) => {
+export const transfer = (id: string, receiver: string, amt: string): Promise<MessageEmbed> => {
+    return new Promise (async (resolve, reject) => {
+        const user = await User.findOne({ where: { userid: id } });
+        if (!user) return reject("You do not have a bank account to transfer with! Open one with /balance.");
+        const recepient = await User.findOne({ where: { userid: receiver } });
+        if (!recepient) return reject("This user doesn't have a bank account!");
 
+        let amount = parseBalance(parseFloat(amt));
+
+        if (user.cash < parseBalance(amount) || amount === 0) return reject("You don't have this much to transfer! (Pro tip: you can only transfer cash)")
+
+        user.cash = user.cash - amount;
+        recepient.cash = recepient.cash + amount;
+        user.save();
+        recepient.save();
+        resolve(createEmbed("Transaction Successful", `You successfully transferred ${formatBalance(amount)} to <@${receiver}>!`, "ORANGE"))
+    })
 }

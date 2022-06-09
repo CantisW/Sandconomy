@@ -58,10 +58,17 @@ export const ReturnOrderedUsers = async (): Promise<IAccount[]> => {
     return user;
 };
 
-export const DepositCash = async (id: string, amount: number) => {
-    amount = parseBalance(amount);
+export const DepositCash = async (id: string, amt?: string) => {
+    let amount = 0;
     const user = await User.findOne({ where: { userid: id } });
     if (!user) return false;
+    const { cash } = await GetAccountInfo(id);
+    if (!amt) {
+        amount = parseBalance(cash);
+    } else {
+        amount = parseBalance(parseFloat(amt));
+    }
+    if (!amount) return false;
     if (parseBalance(amount) > user.cash || amount === 0) return false;
     user.cash = parseBalance(user.cash - amount);
     user.bank = parseBalance(user.bank + amount);
@@ -69,10 +76,17 @@ export const DepositCash = async (id: string, amount: number) => {
     return true;
 };
 
-export const WithdrawCash = async (id: string, amount: number) => {
-    amount = parseBalance(amount);
+export const WithdrawCash = async (id: string, amt?: string) => {
+    let amount = 0;
     const user = await User.findOne({ where: { userid: id } });
     if (!user) return false;
+    const { bank } = await GetAccountInfo(id);
+    if (!amt) {
+        amount = parseBalance(bank);
+    } else {
+        amount = parseBalance(parseFloat(amt));
+    }
+    if (!amount) return false;
     if (amount > user.bank || amount === 0) return false;
     user.cash = parseBalance(user.cash + amount);
     user.bank = parseBalance(user.bank - amount);
