@@ -128,6 +128,7 @@ export const work = async (id: string): Promise<MessageEmbed> => {
             const bal = parseBalance(user.bank * ((100 - fine) / 100));
             user.bank = bal;
             user.last_worked = Date.now();
+            user.times_worked = user.times_worked + 1;
             user.save();
             const embed = createEmbed(selected.text, `Amount lost: ${formatBalance(lost)}`, "RED");
             return resolve(embed);
@@ -167,6 +168,8 @@ export const work = async (id: string): Promise<MessageEmbed> => {
 
 export const rob = async (id: string, robbed: string): Promise<MessageEmbed> => {
     return new Promise(async (resolve, reject) => {
+        if (robbed === id) return reject("As much as you might want to, you cannot rob yourself!");
+
         const { fine, maxRobPercentage, robCooldown }: IConfig = getConfig();
         const cooldown = robCooldown * 1000 * 60;
 
@@ -278,17 +281,18 @@ export const scratch = (id: string, choice: string): Promise<MessageEmbed> => {
         if (user.cash < parseBalance(amount)) return reject("You don't have this much to gamble!")
 
         const highestValue = amount * 100; // if 5, then 500, etc.
-        const baseProbability = 1/3;
+        const baseProbability = 1/4;
         const secondaryProbability = baseProbability * ((amount * 6)/highestValue);
         const jackpotProbability = 1/(highestValue*10); // probability for jackpot! (if 5, then 1/5000)
+        const value = Math.random();
 
-        if (Math.random() < jackpotProbability) {
+        if (value < jackpotProbability) {
             // JACKPOT!
             user.cash = user.cash - parseBalance(amount);
             user.cash = user.cash + parseBalance(highestValue);
             user.save();
             resolve(createEmbed("JACKPOT!", `You won ${formatBalance(highestValue)}! Wow! Losing your entire life savings really paid off!`, "YELLOW"));
-        } else if (Math.random() < secondaryProbability) {
+        } else if (value < secondaryProbability) {
             // some mid tier prizes
             let mult = Math.round(Math.random() * 20)
             if (mult < 10) mult = 10;
@@ -297,7 +301,7 @@ export const scratch = (id: string, choice: string): Promise<MessageEmbed> => {
             user.cash = user.cash + parseBalance(money);
             user.save();
             resolve(createEmbed("Winner!", `You won ${formatBalance(money)}!`, "GREEN"));
-        } else if (Math.random() < baseProbability) {
+        } else if (value < baseProbability) {
             let mult = Math.round(Math.random() * 10)
             if (mult <= 0) mult = 1;
             let money = (amount/2) * mult;
@@ -315,12 +319,15 @@ export const scratch = (id: string, choice: string): Promise<MessageEmbed> => {
 
 export const transfer = (id: string, receiver: string, amt: string): Promise<MessageEmbed> => {
     return new Promise (async (resolve, reject) => {
+        if (receiver === id) return reject("You can't transfer to yourself!");
+
         const user = await User.findOne({ where: { userid: id } });
         if (!user) return reject("You do not have a bank account to transfer with! Open one with /balance.");
         const recepient = await User.findOne({ where: { userid: receiver } });
         if (!recepient) return reject("This user doesn't have a bank account!");
 
         let amount = parseBalance(parseFloat(amt));
+        if (!amount) return reject("You can't transfer that!");
 
         if (user.cash < parseBalance(amount) || amount === 0) return reject("You don't have this much to transfer! (Pro tip: you can only transfer cash)")
 

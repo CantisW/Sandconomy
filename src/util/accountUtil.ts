@@ -45,11 +45,11 @@ export const GetAccountInfo = async (id: string) => {
  */
 
 export const ReturnOrderedUsers = async (): Promise<IAccount[]> => {
-    let user = await User.createQueryBuilder("user").select("*").getRawMany();
-    for (let i = 0; i <= user.length - 1; i++) {
-        await GetAccountInfo(user[i].userid);
+    let bal = await User.createQueryBuilder("user").select("*").getRawMany();
+    for (let i = 0; i <= bal.length - 1; i++) {
+        await GetAccountInfo(bal[i].userid);
     }
-    user = await User.createQueryBuilder("user")
+    let user = await User.createQueryBuilder("user")
         .select("*")
         .where("user.balance > 0")
         .orderBy("user.balance", "DESC")
