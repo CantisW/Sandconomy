@@ -183,7 +183,7 @@ export const rob = async (id: string, robbed: string): Promise<MessageEmbed> => 
             return reject("Uh...not sure what to say here because the idiot dev forgot to put rob messages!");
 
         if (Number(user.last_robbed) + cooldown > Date.now())
-            return reject(`You need to wait ${robCooldown} minutes before working again!`);
+            return reject(`You need to wait ${robCooldown} minutes before robbing again!`);
 
         let rnd = Math.round(Math.random() * messages.length - 1);
         if (rnd < 0) rnd = 0;
@@ -196,6 +196,7 @@ export const rob = async (id: string, robbed: string): Promise<MessageEmbed> => 
             const lost = parseBalance(user.bank * (fine / 100));
             const bal = parseBalance(user.bank * ((100 - fine) / 100));
             user.bank = bal;
+            user.last_robbed = Date.now();
             user.save();
             const embed = createEmbed(
                 selected.text,
@@ -245,26 +246,69 @@ export const flipCoin = async (id: string, amt: string, choice: string): Promise
 
         if (choice === "heads") {
             if (gamble === 0) {
-                amount = parseBalance(amount);
-                user.cash = user.cash + amount;
+                user.cash = user.cash + parseBalance(amount);
                 user.save();
                 resolve(createEmbed("You flipped heads!", `You won ${formatBalance(amount)}!`, "GREEN"));
             } else {
-                user.cash = user.cash - amount;
+                user.cash = user.cash - parseBalance(amount);
                 user.save();
                 resolve(createEmbed("You flipped tails!", `You lost ${formatBalance(amount)}!`, "RED"));
             }
         } else {
             if (gamble === 1) {
-                amount = parseBalance(amount);
-                user.cash = user.cash + amount;
+                user.cash = user.cash + parseBalance(amount);
                 user.save();
                 resolve(createEmbed("You flipped tails!", `You won ${formatBalance(amount)}!`, "GREEN"));
             } else {
-                user.cash = user.cash - amount;
+                user.cash = user.cash - parseBalance(amount);
                 user.save();
                 resolve(createEmbed("You flipped heads!", `You lost ${formatBalance(amount)}!`, "RED"));
             }
+        }
+    })
+}
+
+export const scratch = (id: string, choice: string): Promise<MessageEmbed> => {
+    return new Promise(async (resolve, reject) => {
+        const user = await User.findOne({ where: { userid: id } });
+        if (!user) return reject("You do not have a bank account to gamble with! Open one with /balance.");
+
+        let amount = parseInt(choice.replace('$', ''))
+
+        if (user.cash < parseBalance(amount)) return reject("You don't have this much to gamble!")
+
+        const highestValue = amount * 100; // if 5, then 500, etc.
+        const baseProbability = 1/3;
+        const secondaryProbability = baseProbability * ((amount * 6)/highestValue);
+        const jackpotProbability = 1/(highestValue*10); // probability for jackpot! (if 5, then 1/5000)
+
+        if (Math.random() < jackpotProbability) {
+            // JACKPOT!
+            user.cash = user.cash - parseBalance(amount);
+            user.cash = user.cash + parseBalance(highestValue);
+            user.save();
+            resolve(createEmbed("JACKPOT!", `You won ${formatBalance(highestValue)}! Wow! Losing your entire life savings really paid off!`, "YELLOW"));
+        } else if (Math.random() < secondaryProbability) {
+            // some mid tier prizes
+            let mult = Math.round(Math.random() * 20)
+            if (mult < 10) mult = 10;
+            let money = amount * mult;
+            user.cash = user.cash - parseBalance(amount);
+            user.cash = user.cash + parseBalance(money);
+            user.save();
+            resolve(createEmbed("Winner!", `You won ${formatBalance(money)}!`, "GREEN"));
+        } else if (Math.random() < baseProbability) {
+            let mult = Math.round(Math.random() * 10)
+            if (mult <= 0) mult = 1;
+            let money = (amount/2) * mult;
+            user.cash = user.cash - parseBalance(amount);
+            user.cash = user.cash + parseBalance(money);
+            user.save();
+            resolve(createEmbed("Winner!", `You won ${formatBalance(money)}! What a large sum of money!`, "GREEN"));
+        } else {
+            user.cash = user.cash - parseBalance(amount);
+            user.save();
+            resolve(createEmbed("Loser!", `You didn't win anything this time. Oh well.`, "RED"));
         }
     })
 }
