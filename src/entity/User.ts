@@ -5,9 +5,9 @@ import {
     Entity,
     JoinColumn,
     ManyToOne,
-    OneToOne,
     PrimaryGeneratedColumn,
 } from "typeorm";
+import { IInventoryItem, IItem } from "../types/types.js";
 import { Job } from "./Job.js";
 
 @Entity()
@@ -51,6 +51,9 @@ export class User extends BaseEntity {
 
     @Column({ type: "bigint", default: 0 })
     last_applied: number;
+
+    @Column({ type: "simple-json", nullable: true })
+    inventory: IInventoryItem[];
 
     @CreateDateColumn()
     created: Date;
