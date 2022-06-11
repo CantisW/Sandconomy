@@ -1,15 +1,11 @@
 import { MessageEmbed } from "discord.js";
+import { Item } from "../entity/Item.js";
 import { Job } from "../entity/Job.js";
 import { Message } from "../entity/Message.js";
 import { Rob } from "../entity/Rob.js";
 import { User } from "../entity/User.js";
-import { IConfig, IJob } from "../types/types.js";
+import { IConfig } from "../types/types.js";
 import { createEmbed, formatBalance, getConfig, parseBalance } from "./botUtils.js";
-
-export const returnOrderedJobs = async (): Promise<IJob[]> => {
-    const job = await Job.createQueryBuilder("job").select("*").orderBy("job.amount", "ASC").getRawMany();
-    return job;
-};
 
 export const createJob = async (name: string, description: string, amount: number, selectiveness = 20, level = 0) => {
     const job = new Job();
@@ -25,7 +21,7 @@ export const createJob = async (name: string, description: string, amount: numbe
 export const getJob = async (id: string, jobid: number) => {
     return new Promise(async (resolve, reject) => {
         const { workCooldown }: IConfig = getConfig();
-        const cooldown = workCooldown * 1000 * 60 * 3;
+        const cooldown = workCooldown * 1000 * 60 * 2;
         const job = await Job.findOne({ where: { id: jobid } });
         const user = await User.findOne({ where: { userid: id } });
         
@@ -33,7 +29,7 @@ export const getJob = async (id: string, jobid: number) => {
         if (!user) return reject("You don't have a bank account! Open one with /balance.");
 
         if (Number(user.last_applied) + cooldown > Date.now())
-            return reject(`You need to wait ${workCooldown*3} minutes before applying to another job!`);
+            return reject(`You need to wait ${workCooldown*2} minutes before applying to another job!`);
         if (user.employed)
             return reject("You wouldn't cheat on your employer, would you? (Pro tip: quit your job first!)");
         if (job.minimum_level > user.level)
@@ -154,7 +150,7 @@ export const work = async (id: string): Promise<MessageEmbed> => {
                 }. You should work harder, though.`,
                 "GREEN",
             );
-            resolve(embed);
+            return resolve(embed);
         }
         user.save();
         const embed = createEmbed(
@@ -162,7 +158,7 @@ export const work = async (id: string): Promise<MessageEmbed> => {
             `Amount earned: ${formatBalance(amount)} for ${hours} hours of work.`,
             "GREEN",
         );
-        resolve(embed);
+        return resolve(embed);
     });
 };
 
@@ -170,7 +166,7 @@ export const rob = async (id: string, robbed: string): Promise<MessageEmbed> => 
     return new Promise(async (resolve, reject) => {
         if (robbed === id) return reject("As much as you might want to, you cannot rob yourself!");
 
-        const { fine, maxRobPercentage, robCooldown }: IConfig = getConfig();
+        const { fine, minRobPercentage, maxRobPercentage, robCooldown }: IConfig = getConfig();
         const cooldown = robCooldown * 1000 * 60;
 
         const user = await User.findOne({ where: { userid: id } });
@@ -192,7 +188,7 @@ export const rob = async (id: string, robbed: string): Promise<MessageEmbed> => 
         if (rnd < 0) rnd = 0;
         const selected = messages[rnd];
 
-        const percentage = Math.round(Math.random() * maxRobPercentage) / 100;
+        const percentage = Math.round(Math.random() * (maxRobPercentage - minRobPercentage) + minRobPercentage) / 100;
         const robbedAmount = parseBalance(robbedUser.cash * percentage);
 
         if (!selected.type) {
@@ -281,7 +277,8 @@ export const scratch = (id: string, choice: string): Promise<MessageEmbed> => {
         if (user.cash < parseBalance(amount)) return reject("You don't have this much to gamble!")
 
         const highestValue = amount * 100; // if 5, then 500, etc.
-        const baseProbability = 1/4;
+        const { scratcherChance } = getConfig();
+        const baseProbability = scratcherChance;
         const secondaryProbability = baseProbability * ((amount * 6)/highestValue);
         const jackpotProbability = 1/(highestValue*10); // probability for jackpot! (if 5, then 1/5000)
         const value = Math.random();
@@ -300,7 +297,7 @@ export const scratch = (id: string, choice: string): Promise<MessageEmbed> => {
             user.cash = user.cash - parseBalance(amount);
             user.cash = user.cash + parseBalance(money);
             user.save();
-            resolve(createEmbed("Winner!", `You won ${formatBalance(money)}!`, "GREEN"));
+            resolve(createEmbed("Rare Winner!", `You won ${formatBalance(money)}!`, "GREEN"));
         } else if (value < baseProbability) {
             let mult = Math.round(Math.random() * 10)
             if (mult <= 0) mult = 1;
@@ -338,3 +335,104 @@ export const transfer = (id: string, receiver: string, amt: string): Promise<Mes
         resolve(createEmbed("Transaction Successful", `You successfully transferred ${formatBalance(amount)} to <@${receiver}>!`, "ORANGE"))
     })
 }
+
+export const createItem = (name: string, description: string, price: number, effect: string, duration: number, amount?: number) => {
+    const item = new Item()
+    item.name = name;
+    item.description = description;
+    item.price = price;
+    item.effect = effect;
+    item.duration = duration ? duration : 0;
+    item.amount = amount ? amount : 0;
+    item.save()
+    return true;
+}
+
+export const buyItem = (id: string, itemId: number): Promise<MessageEmbed> => {
+    return new Promise(async (resolve, reject) => {
+        const user = await User.findOne({ where: { userid: id } });
+        if (!user) return reject("You don't have a bank account! Create one with /balance.");
+        const item = await Item.findOne({ where: { id: itemId } });
+        if (!item) return reject("This item doesn't exist!");
+        if (user.cash < item.price) return reject("You cannot afford this item! Get richer!");
+
+        let found = false;
+        let foundId = 0;
+
+        const obj = { id: itemId, quantity: 1 }
+
+        if (user.inventory) {
+            user.inventory.forEach((inv, i) => {
+                if (itemId === inv.id) {
+                    found = true;
+                    foundId = i;
+                }
+            })
+        } else {
+            user.inventory = [];
+        }
+
+        if (found) {
+            if (item.effect === "generate") return reject("You already own this generator!");
+            user.inventory[foundId].quantity = user.inventory[foundId].quantity + 1;
+            user.cash = user.cash - item.price;
+            user.save();
+            return resolve(createEmbed("Item Bought", `You successfully bought 1 ${item.name}!`, "YELLOW"))
+        }
+        user.inventory.push(obj);
+        user.cash = user.cash - item.price;
+        user.save();
+        resolve(createEmbed("Item Bought", `You successfully bought 1 ${item.name}!`, "YELLOW"))
+    })
+}
+
+export const getItemInfo = async (id: number) => {
+    let obj = { id: 0, name: "", description: "", price: 0, effect: "", duration: 0, amount: 0 };
+
+    const item = await Item.findOne({ where: { id: id } });
+    if (!item) return obj;
+    const name = item.name;
+    const description = item.description;
+    const price = item.price;
+    const effect = item.effect;
+    const duration = item.duration;
+    const amount = item.amount;
+    obj = { id: item.id, name: name, description: description, price: price, effect: effect, duration: duration, amount: amount };
+    return obj;
+};
+
+export const useItem = async (id: string, itemId: number): Promise<MessageEmbed> => {
+    return new Promise(async (resolve, reject) => {
+        const user = await User.findOne({ where: { userid: id } });
+        if (!user) return reject("You don't have a bank account! Create one with /balance.");
+        const item = await Item.findOne({ where: { id: itemId } });
+        if (!item) return reject("This item doesn't exist!");
+        if (!user.inventory) return reject("You don't own any items!")
+
+        let found = false;
+        let foundId = 0;
+
+        user.inventory.forEach((inv, i) => {
+            if (itemId === inv.id) {
+                found = true;
+                foundId = i;
+            }
+        })
+
+        if (!found) return reject("You don't own this item!")
+
+        if (user.inventory[foundId].quantity === 1 && item.effect !== "generate") {
+            user.inventory = user.inventory.filter(item => item.id !== itemId);
+        } else if (item.effect !== "generate") {
+            user.inventory[foundId].quantity = user.inventory[foundId].quantity - 1
+        } else {
+            return reject("Generators are automatically used once bought!")
+        }
+
+        switch (item.effect) {
+            case "mute":
+                break;
+        }
+        resolve(createEmbed("Item Used", `You have successfully used a ${item.name}!`, "YELLOW"))
+    })
+};

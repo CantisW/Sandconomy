@@ -1,7 +1,11 @@
 import { ColorResolvable, MessageEmbed } from "discord.js";
 import fs from "fs";
+import { Item } from "../entity/Item.js";
+import { Job } from "../entity/Job.js";
+import { User } from "../entity/User.js";
 import { client } from "../index.js";
-import { IConfig, IPagnationArray } from "../types/types.js";
+import { IAccount, IConfig, IInventoryItem, IItem, IJob, IPagnationArray } from "../types/types.js";
+import { GetAccountInfo } from "./accountUtil.js";
 
 const pagnationArray: IPagnationArray[] = [];
 
@@ -105,4 +109,36 @@ export const formatBalance = (balance: number) => {
 export const parseBalance = (num: number) => {
     if (num < 0) return 0;
     return Math.round(num * 10 ** 2) / 10 ** 2; // mult by places then round to cut off excess, then go back to decimal
+};
+
+export const returnOrderedJobs = async (): Promise<IJob[]> => {
+    const job = await Job.createQueryBuilder("job").select("*").orderBy("job.amount", "ASC").getRawMany();
+    return job;
+};
+
+
+/**
+ * Returns an ordered list of users by balance, excluding 0.
+ */
+ export const returnOrderedUsers = async (): Promise<IAccount[]> => {
+    let bal = await User.createQueryBuilder("user").select("*").getRawMany();
+    for (let i = 0; i <= bal.length - 1; i++) {
+        await GetAccountInfo(bal[i].userid);
+    }
+    let user = await User.createQueryBuilder("user")
+        .select("*")
+        .where("user.balance > 0")
+        .orderBy("user.balance", "DESC")
+        .getRawMany();
+
+    return user;
+};
+
+export const returnOrderedItems = async (): Promise<IItem[]> => {
+    let items = await Item.createQueryBuilder("item")
+        .select("*")
+        .orderBy("item.effect", "ASC")
+        .getRawMany();
+
+    return items;
 };

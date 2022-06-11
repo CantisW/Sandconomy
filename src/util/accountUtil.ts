@@ -1,5 +1,4 @@
 import { User } from "../entity/User.js";
-import { IAccount } from "../types/types.js";
 import { parseBalance, sanitizeId } from "./botUtils.js";
 
 /**
@@ -24,7 +23,7 @@ export const CheckIfAccountExists = async (id: string) => {
  * Get info for an account. Designed for use within command files.
  */
 export const GetAccountInfo = async (id: string) => {
-    let obj = { balance: 0, cash: 0, bank: 0, xp: 0, level: 0, timesWorked: 0 };
+    const obj = { balance: 0, cash: 0, bank: 0, xp: 0, level: 0, timesWorked: 0, inventory: [] };
 
     const user = await User.findOne({ where: { userid: sanitizeId(id) } });
     if (!user) return obj;
@@ -34,28 +33,11 @@ export const GetAccountInfo = async (id: string) => {
     const xp = user.experience;
     const level = user.level;
     const timesWorked = user.times_worked;
-    obj = { balance: bal, cash: cash, bank: bank, xp: xp, level: level, timesWorked: timesWorked };
+    const inventory = user.inventory;
+    const info = { balance: bal, cash: cash, bank: bank, xp: xp, level: level, timesWorked: timesWorked, inventory: inventory };
     user.balance = bal;
     user.save();
-    return obj;
-};
-
-/**
- * Returns an ordered list of users by balance, excluding 0.
- */
-
-export const ReturnOrderedUsers = async (): Promise<IAccount[]> => {
-    let bal = await User.createQueryBuilder("user").select("*").getRawMany();
-    for (let i = 0; i <= bal.length - 1; i++) {
-        await GetAccountInfo(bal[i].userid);
-    }
-    let user = await User.createQueryBuilder("user")
-        .select("*")
-        .where("user.balance > 0")
-        .orderBy("user.balance", "DESC")
-        .getRawMany();
-
-    return user;
+    return info;
 };
 
 export const DepositCash = async (id: string, amt?: string) => {
