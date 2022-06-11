@@ -1,15 +1,12 @@
+import { Pagination, PaginationResolver, PaginationType } from "@discordx/pagination";
 import {
-    ButtonInteraction,
-    ColorResolvable,
     CommandInteraction,
-    MessageActionRow,
-    MessageButton,
     MessageEmbed,
     User,
 } from "discord.js";
-import { ButtonComponent, Discord, Permission, Slash, SlashGroup, SlashOption } from "discordx";
+import { Discord, Permission, Slash, SlashGroup, SlashOption } from "discordx";
 import { IJob } from "../types/types.js";
-import { formatBalance, getConfig, getPagnationUserIndex, returnBotSetting, setPagnationUserIndex } from "../util/botUtils.js";
+import { formatBalance, getConfig, getPagnationUserIndex, returnBotSetting, returnOrderedJobs, setPagnationUserIndex } from "../util/botUtils.js";
 import {
     createJob,
     createMessage,
@@ -17,22 +14,7 @@ import {
     getJob,
     getJobInfo,
     quitJob,
-    returnOrderedJobs,
 } from "../util/economyUtil.js";
-
-const backButton = new MessageButton({
-    style: "SECONDARY",
-    label: "Back",
-    emoji: "⬅️",
-    customId: "back",
-});
-
-const forwardButton = new MessageButton({
-    style: "SECONDARY",
-    label: "Forward",
-    emoji: "➡️",
-    customId: "forward",
-});
 
 const { currencyName } = getConfig();
 let ownerid = returnBotSetting("ownerId");
@@ -50,141 +32,39 @@ export class Jobs {
     @Slash("list", { description: "List all the available jobs." })
     @SlashGroup("job")
     async leaderboard(interaction: CommandInteraction) {
-        let to = 9;
-        let row = new MessageActionRow();
-        let components = false;
-
-        await interaction.deferReply();
-
         this.jobs = await returnOrderedJobs();
-        this.length = this.jobs.length - 1;
+        this.length = this.jobs.length; 
 
-        const embed = new MessageEmbed()
-            .setColor("0xf1c40f" as ColorResolvable)
-            .setTitle("Jobs List")
-            //.setURL('')s
-            //.setAuthor('Santeeisweird9')
-            .setDescription("The list of companies looking for employees to exploit (pg 1)")
-            //.setThumbnail('')
-            //.addField('', '', true)
-            //.setImage('')
-            .setTimestamp()
-            .setFooter(`${currencyName}`, ""); // TODO: set url as second arg
+        const pageOptions = new PaginationResolver(async (page, pagination) => {
+            pagination.maxLength = Math.ceil(this.length / 10);
 
-        if (this.length > to) {
-            components = true;
-            row = row.addComponents([forwardButton]);
-        } else {
-            to = this.length;
-        }
+            const currentPage = pagination.currentPage;
 
-        for (let i = 0; i <= to; i++) {
-            embed.addFields({
-                name: `${this.jobs[i].name} (ID: ${this.jobs[i].id})`,
-                value: `${this.jobs[i].description}\n${formatBalance(this.jobs[i].amount)}/hr\nLevel required: ${
-                    this.jobs[i].minimum_level
-                }`,
-            });
-        }
+            const embed = new MessageEmbed()
+                .setTitle("Leaderboard")
+                .setDescription(`The global leaderboard of Elon Musks (pg ${page + 1})`)
+                .setTimestamp()
+                .setFooter({ text: `${currencyName}`});
 
-        if (components) {
-            await interaction.editReply({ embeds: [embed], components: [row] });
-        } else {
-            await interaction.editReply({ embeds: [embed] });
-        }
-    }
+            const jobs = this.jobs.slice(currentPage * 10, (currentPage * 10) + 10);
+            for (let job of jobs) {
+                embed.addField(
+                    `${job.name} (ID: ${job.id})`,
+                    `${job.description}\n${formatBalance(job.amount)}/hr\nLevel required: ${job.minimum_level}`
+                )
+            }
+            return embed;
+        }, Math.ceil(this.length / 10))
 
-    @ButtonComponent("forward")
-    async forward(interaction: ButtonInteraction) {
-        let to = getPagnationUserIndex(interaction.user.id, "jobs_list");
-        let row = new MessageActionRow();
-
-        if (to === 0) setPagnationUserIndex(interaction.user.id, "jobs_list", 10); // assumes that user made a new list if 'to' is 0
-
-        let current = Math.floor((1 + getPagnationUserIndex(interaction.user.id, "jobs_list")) / 10) * 10; // Sets current to where we are right now
-
-        if (this.length > current + 9) {
-            setPagnationUserIndex(interaction.user.id, "jobs_list", current + 9); // Where we are going to (if we had 30 items, it would go 0 => 9, then 10 => 19, then...)
-            row = row.addComponents([backButton, forwardButton]);
-        } else {
-            setPagnationUserIndex(interaction.user.id, "jobs_list", this.length);
-            row = row.addComponents([backButton]);
-        }
-
-        to = getPagnationUserIndex(interaction.user.id, "jobs_list"); // Re-set 'to' to adjust for earlier code
-
-        const embed = new MessageEmbed()
-            .setColor("0xf1c40f" as ColorResolvable)
-            .setTitle("Jobs List")
-            //.setURL('')s
-            //.setAuthor('Santeeisweird9')
-            .setDescription(`The list of companies looking for employees to exploit (pg ${current - 9 + 1})`)
-            //.setThumbnail('')
-            //.addField('', '', true)
-            //.setImage('')
-            .setTimestamp()
-            .setFooter(`${currencyName}`, ""); // TODO: set url as second arg
-
-        for (let i = current; i <= to; i++) {
-            embed.addFields({
-                name: `${this.jobs[i].name} (ID: ${this.jobs[i].id})`,
-                value: `${this.jobs[i].description}\n${formatBalance(this.jobs[i].amount)}/hr\nLevel required: ${
-                    this.jobs[i].minimum_level
-                }`,
-            });
-        }
-        await interaction.deferUpdate();
-        await interaction.editReply({ embeds: [embed], components: [row] });
-    }
-
-    @ButtonComponent("back")
-    async back(interaction: ButtonInteraction) {
-        let to = getPagnationUserIndex(interaction.user.id, "jobs_list");
-        let row = new MessageActionRow();
-
-        if (to === 0) return interaction.reply("Don't have more than two lists!"); // this shouldn't normally be possible
-
-        let current = Math.floor((1 + getPagnationUserIndex(interaction.user.id, "jobs_list")) / 10) * 10; // Sets current to where we are right now
-
-        if (current - 10 > 0) {
-            setPagnationUserIndex(interaction.user.id, "jobs_list", current - 10); // Where we are going to
-            row = row.addComponents([backButton, forwardButton]);
-        } else {
-            setPagnationUserIndex(interaction.user.id, "jobs_list", 9);
-            row = row.addComponents([forwardButton]);
-        }
-
-        to = getPagnationUserIndex(interaction.user.id, "jobs_list"); // Re-set 'to' to adjust for earlier code
-
-        const embed = new MessageEmbed()
-            .setColor("0xf1c40f" as ColorResolvable)
-            .setTitle("Jobs List")
-            //.setURL('')s
-            //.setAuthor('Santeeisweird9')
-            .setDescription(`The list of companies looking for employees to exploit (pg ${current - 9})`)
-            //.setThumbnail('')
-            //.addField('', '', true)
-            //.setImage('')
-            .setTimestamp()
-            .setFooter(`${currencyName}`, ""); // TODO: set url as second arg
-
-        if (to === 9) {
-            current = to;
-            to = 0;
-        } else {
-            current = current - 1;
-        }
-
-        for (let i = to; i <= current; i++) {
-            embed.addFields({
-                name: `${this.jobs[i].name} (ID: ${this.jobs[i].id})`,
-                value: `${this.jobs[i].description}\n${formatBalance(this.jobs[i].amount)}/hr\nLevel required: ${
-                    this.jobs[i].minimum_level
-                }`,
-            });
-        }
-        await interaction.deferUpdate();
-        await interaction.editReply({ embeds: [embed], components: [row] });
+        const pagination = new Pagination(interaction, pageOptions, {
+            // onTimeout: () => {
+            //   interaction.deleteReply();
+            // },
+            // time: 5 * 1000,
+            type: PaginationType.Button,
+          });
+      
+        await pagination.send();
     }
 
     @Permission(false)
