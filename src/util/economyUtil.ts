@@ -243,26 +243,17 @@ export const flipCoin = async (id: string, amt: string, choice: string): Promise
 
         const gamble = Math.round(Math.random())
 
-        if (choice === "heads") {
-            if (gamble === 0) {
-                user.cash = user.cash + parseBalance(amount);
-                user.save();
-                resolve(createEmbed("You flipped heads!", `You won ${formatBalance(amount)}!`, "GREEN"));
-            } else {
-                user.cash = user.cash - parseBalance(amount);
-                user.save();
-                resolve(createEmbed("You flipped tails!", `You lost ${formatBalance(amount)}!`, "RED"));
-            }
+        let num = 0;
+        choice === "heads" ? num = 0 : num = 1;
+
+        if (gamble === num) {
+            user.cash = user.cash + parseBalance(amount);
+            user.save();
+            resolve(createEmbed(`You flipped ${choice}!`, `You won ${formatBalance(amount)}!`, "GREEN"));
         } else {
-            if (gamble === 1) {
-                user.cash = user.cash + parseBalance(amount);
-                user.save();
-                resolve(createEmbed("You flipped tails!", `You won ${formatBalance(amount)}!`, "GREEN"));
-            } else {
-                user.cash = user.cash - parseBalance(amount);
-                user.save();
-                resolve(createEmbed("You flipped heads!", `You lost ${formatBalance(amount)}!`, "RED"));
-            }
+            user.cash = user.cash - parseBalance(amount);
+            user.save();
+            resolve(createEmbed(`You flipped ${num === 0 ? "tails" : "heads"}!`, `You lost ${formatBalance(amount)}!`, "RED"));
         }
     })
 }
