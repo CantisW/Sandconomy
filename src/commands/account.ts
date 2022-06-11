@@ -134,6 +134,7 @@ export class Account {
         user: string,
         interaction: CommandInteraction,
     ) {
+        if (interaction.user.id !== "301770103224270851") return interaction.reply("You have insufficient permissions!") // incase permissions breaks again
         if (await CheckIfAccountExists(user)) return interaction.reply(`Successfully created the account ${user}`);
     }
 }
