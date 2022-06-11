@@ -33,8 +33,26 @@ export interface IJob {
 export interface IConfig {
     currencyName: string;
     fine: number;
+    minRobPercentage: number;
     maxRobPercentage: number;
     workCooldown: number;
     robCooldown: number;
     experienceNeededMultiplier: number;
+    scratcherChance: number;
 }
+
+export interface IItem {
+    id: number;
+    name: string;
+    description: string;
+    price: number;
+    effect?: string;
+    duration?: number;
+    amount?: number;
+}
+
+export interface IInventoryItem {
+    id: number;
+    quantity: number;
+}
+
