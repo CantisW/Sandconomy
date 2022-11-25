@@ -420,9 +420,10 @@ export const useItem = async (id: string, itemId: number): Promise<MessageEmbed>
             return reject("Generators are automatically used once bought!")
         }
 
-        switch (item.effect) {
-            case "mute":
-                break;
+        if (item.effect === "mute") {
+            if (item.name === "TNT") {
+                
+            }
         }
         resolve(createEmbed("Item Used", `You have successfully used a ${item.name}!`, "YELLOW"))
     })
